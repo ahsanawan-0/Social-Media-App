@@ -97,34 +97,64 @@ module.exports = {
       });
     }
   },
-  getPostOfFollowing:async(req,res)=>{
+  getPostOfFollowing: async (req, res) => {
+    try {
+      const user = await userModel.findById(req.user._id);
 
-try {
-    const user=await userModel.findById(req.user._id)
+      const posts = await postModel.find({
+        owner: {
+          $in: user.following,
+        },
+      });
 
-const posts=await postModel.find({
-    owner:{
-        $in:user.following,
+      res.status(200).json({
+        success: true,
+        posts,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
     }
 
+    
+  },
+  updateCaption: async (req, res) => {
+    try {
+      const post = await postModel.findById(req.params.id);
+      const user = await userModel.findById(req.user._id);
+
+
+if(!post){
+
+  res.status(500).json({
+    success: false,
+    message:"post not found"
+  });
+}
+if(post.owner.toString() !==user._id.toString()){
+
+  res.status(500).json({
+    success: false,
+    message:" unauthorize"
+  });
+}
+post.caption=req.body.caption;
+await post.save()
+return res.status(200).json({
+  success:true,
+  message:"post caption  updated "
 })
 
+     
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
 
-
-        res.status(200).json({
-            success:true,
-            posts,
-          
-
-        })
-
-} catch (error) {
-    res.status(500).json({
-        success:false,
-        message:error.message
-    })
-}
-
-
-  }
+    
+  },
 };
