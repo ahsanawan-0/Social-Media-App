@@ -1,11 +1,10 @@
 
 const route = require('express').Router();
-const {login,registerUser}=require("../controllers/user")
+const {followUser}=require("../controllers/user");
+const { isAuthenticated } = require('../middleweres/auth');
 
 
 
-
-route.post("/register",registerUser)
-route.post("/login",login);
+route.get("/follow/:id",isAuthenticated,followUser);
 
 module.exports = route;

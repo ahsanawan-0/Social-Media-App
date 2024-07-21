@@ -13,10 +13,12 @@ if (process.env.NODE_ENV !== "production") {
 
 // importing routes from router
 const postRoute = require("./routes/post");
+const authRouter = require("./routes/authRouter");
 const userRouter = require("./routes/user");
 //routes using
 app.use("/post", postRoute);
 
 
-app.use("/auth", userRouter);
+app.use("/auth", authRouter);
+app.use("/user", userRouter);
 module.exports = app;

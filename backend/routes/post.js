@@ -1,7 +1,7 @@
 const route = require('express').Router();
 
 const { isAuthenticated } = require("../middleweres/auth");
-const { createPost, likeAndUnlike, deletePost } = require("../controllers/post");
+const { createPost, likeAndUnlike, deletePost, followUser } = require("../controllers/post");
 
 
 
