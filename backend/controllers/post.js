@@ -96,6 +96,35 @@ module.exports = {
         message: error.message,
       });
     }
+  },
+  getPostOfFollowing:async(req,res)=>{
+
+try {
+    const user=await userModel.findById(req.user._id)
+
+const posts=await postModel.find({
+    owner:{
+        $in:user.following,
+    }
+
+})
+
+
+
+        res.status(200).json({
+            success:true,
+            posts,
+          
+
+        })
+
+} catch (error) {
+    res.status(500).json({
+        success:false,
+        message:error.message
+    })
+}
+
+
   }
-  
 };
