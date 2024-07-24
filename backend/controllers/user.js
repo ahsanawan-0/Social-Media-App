@@ -1,9 +1,13 @@
 // const { use } = require("../app");
 const userModel = require("../models/Users");
+const { sendEmail } = require("../middleweres/sendEmail");
+const crypto = require("crypto");
+const cloudinary = require("cloudinary");
 
 module.exports = {
   
   followUser: async (req, res) => {
+
     try {
       const userToFollow = await userModel.findById(req.params.id);
       const loggedInUser = await userModel.findById(req.user._id);

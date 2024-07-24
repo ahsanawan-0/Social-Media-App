@@ -1,5 +1,6 @@
 const postModel = require("../models/Post");
 const userModel = require("../models/Users");
+
 module.exports = {
   createPost: async (req, res) => {
     // console.log(req);
@@ -117,44 +118,121 @@ module.exports = {
         message: error.message,
       });
     }
-
-    
   },
   updateCaption: async (req, res) => {
     try {
       const post = await postModel.findById(req.params.id);
       const user = await userModel.findById(req.user._id);
 
-
-if(!post){
-
-  res.status(500).json({
-    success: false,
-    message:"post not found"
-  });
-}
-if(post.owner.toString() !==user._id.toString()){
-
-  res.status(500).json({
-    success: false,
-    message:" unauthorize"
-  });
-}
-post.caption=req.body.caption;
-await post.save()
-return res.status(200).json({
-  success:true,
-  message:"post caption  updated "
-})
-
-     
+      if (!post) {
+        res.status(500).json({
+          success: false,
+          message: "post not found",
+        });
+      }
+      if (post.owner.toString() !== user._id.toString()) {
+        res.status(500).json({
+          success: false,
+          message: " unauthorize",
+        });
+      }
+      post.caption = req.body.caption;
+      await post.save();
+      return res.status(200).json({
+        success: true,
+        message: "post caption  updated ",
+      });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: error.message,
       });
     }
+  },
+  addComments: async (req, res) => {
+    try {
+      const post = await postModel.findById(req.params.id);
 
-    
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: "Post not found",
+        });
+      }
+
+      let commentIndex = -1;
+
+      // Checking if comment already exists
+
+      post.comments.forEach((item, index) => {
+        if (item.user.toString() === req.user._id.toString()) {
+          commentIndex = index;
+        }
+      });
+
+      if (commentIndex !== -1) {
+        post.comments[commentIndex].comment = req.body.comment;
+
+        await post.save();
+
+        return res.status(200).json({
+          success: true,
+          message: "Comment Updated",
+        });
+      } else {
+        post.comments.push({
+          user: req.user._id,
+          comment: req.body.comment,
+        });
+
+        await post.save();
+        return res.status(200).json({
+          success: true,
+          message: "Comment added",
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  },
+
+  commentDelete: async (req, res) => {
+    try {
+      const posts = await postModel.findById(req.params._id);
+      if (!posts) {
+        return res.status(500).json({
+          success: false,
+          message: "post not found",
+        });
+      }
+      if (posts.owner.toString() === req.user._id.toString()) {
+        posts.comments.forEach((item, index) => {
+          if (item._id.toString() === req.body.commentId.toString()) {
+            return posts.comments.splice(index, 1);
+          }
+        });
+        await posts.save();
+      } else {
+        posts.comments.forEach((item, index) => {
+          if (item.user.toString() === req.user._id.toString()) {
+            return posts.comments.splice(index, 1);
+          }
+        });
+
+        await posts.save();
+        res.status(200).json({
+          success: true,
+          message: " Your comment deleted",
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   },
 };

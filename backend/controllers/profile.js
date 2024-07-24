@@ -35,19 +35,31 @@ module.exports = {
   updateProfile: async (req, res) => {
     try {
       const user = await userModel.findById(req.user._id);
-      const { name, email } = req.body;
-
+  
+      const { name, email, avatar } = req.body;
+  
       if (name) {
         user.name = name;
       }
       if (email) {
         user.email = email;
       }
+  
+      if (avatar) {
+        await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+  
+        const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+          folder: "avatars",
+        });
+        user.avatar.public_id = myCloud.public_id;
+        user.avatar.url = myCloud.secure_url;
+      }
+  
       await user.save();
-
+  
       res.status(200).json({
         success: true,
-        message: "  Profile  Updated Successfully",
+        message: "Profile Updated",
       });
     } catch (error) {
       res.status(500).json({
@@ -64,7 +76,8 @@ module.exports = {
       const following = user.following;
       const followers = user.followes;
       const userId = user._id;
-
+    // Removing Avatar from cloudinary
+    await cloudinary.v2.uploader.destroy(user.avatar.public_id);
       // logout after delete
       res.cookie("token", null, {
         expires: new Date(Date.now()),
@@ -88,10 +101,36 @@ module.exports = {
         await getFollwers.save();
       }
 
+
       // delete posts after deleting user
       for (let i = 0; i < post.length; i++) {
         const getpost = await postModel.findByIdAndDelete(post[i]);
       }
+          // removing all comments of the user from all posts
+    const allPosts = await postModel.find();
+
+    for (let i = 0; i < allPosts.length; i++) {
+      const post = await postModel.findById(allPosts[i]._id);
+
+      for (let j = 0; j < post.comments.length; j++) {
+        if (post.comments[j].user === userId) {
+          post.comments.splice(j, 1);
+        }
+      }
+      await post.save();
+    }
+    // removing all likes of the user from all posts
+
+    for (let i = 0; i < allPosts.length; i++) {
+      const post = await postModel.findById(allPosts[i]._id);
+
+      for (let j = 0; j < post.likes.length; j++) {
+        if (post.likes[j] === userId) {
+          post.likes.splice(j, 1);
+        }
+      }
+      await post.save();
+    }
       res.status(200).json({
         success: true,
         message: "Profile deleted successfully",

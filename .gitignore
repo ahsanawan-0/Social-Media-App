@@ -3,3 +3,9 @@ node_modules/
 
 # Environment variables
 .env
+
+
+
+git branch -C card
+git log to check status 
+HEAD command push latest 
