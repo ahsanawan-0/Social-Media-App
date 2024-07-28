@@ -1,4 +1,5 @@
 const userModel = require("../models/Users");
+const cloudinary = require("cloudinary");
 const postModel = require("../models/Post");
 module.exports = {
   updatePassword: async (req, res) => {
@@ -35,19 +36,31 @@ module.exports = {
   updateProfile: async (req, res) => {
     try {
       const user = await userModel.findById(req.user._id);
-      const { name, email } = req.body;
-
+  
+      const { name, email, avatar } = req.body;
+  
       if (name) {
         user.name = name;
       }
       if (email) {
         user.email = email;
       }
+  
+      if (avatar) {
+        await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+  
+        const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+          folder: "avatars",
+        });
+        user.avatar.public_id = myCloud.public_id;
+        user.avatar.url = myCloud.secure_url;
+      }
+  
       await user.save();
-
+  
       res.status(200).json({
         success: true,
-        message: "  Profile  Updated Successfully",
+        message: "Profile Updated",
       });
     } catch (error) {
       res.status(500).json({
@@ -62,9 +75,10 @@ module.exports = {
       //get post array of user follower and id
       const post = user.posts;
       const following = user.following;
-      const followers = user.followes;
+      const followers = user.followers;
       const userId = user._id;
-
+    // Removing Avatar from cloudinary
+    await cloudinary.v2.uploader.destroy(user.avatar.public_id);
       // logout after delete
       res.cookie("token", null, {
         expires: new Date(Date.now()),
@@ -74,8 +88,8 @@ module.exports = {
       for (let i = 0; i < following.length; i++) {
         const getFollowing = await userModel.findById(following[i]);
 
-        const index = getFollowing.followes.indexOf(userId);
-        getFollowing.followes.splice(index, 1);
+        const index = getFollowing.followers.indexOf(userId);
+        getFollowing.followers.splice(index, 1);
 
         await getFollowing.save();
       }
@@ -88,10 +102,36 @@ module.exports = {
         await getFollwers.save();
       }
 
+
       // delete posts after deleting user
       for (let i = 0; i < post.length; i++) {
         const getpost = await postModel.findByIdAndDelete(post[i]);
       }
+          // removing all comments of the user from all posts
+    const allPosts = await postModel.find();
+
+    for (let i = 0; i < allPosts.length; i++) {
+      const post = await postModel.findById(allPosts[i]._id);
+
+      for (let j = 0; j < post.comments.length; j++) {
+        if (post.comments[j].user === userId) {
+          post.comments.splice(j, 1);
+        }
+      }
+      await post.save();
+    }
+    // removing all likes of the user from all posts
+
+    for (let i = 0; i < allPosts.length; i++) {
+      const post = await postModel.findById(allPosts[i]._id);
+
+      for (let j = 0; j < post.likes.length; j++) {
+        if (post.likes[j] === userId) {
+          post.likes.splice(j, 1);
+        }
+      }
+      await post.save();
+    }
       res.status(200).json({
         success: true,
         message: "Profile deleted successfully",
@@ -105,7 +145,9 @@ module.exports = {
   },
   getOwnProfile: async (req, res) => {
     try {
-      const user = await userModel.findById(req.user._id).populate("posts");
+      const user = await userModel.findById(req.user._id).populate(
+        "posts followers following"
+      );
       res.status(200).json({
         success: true,
         user,
@@ -119,7 +161,9 @@ module.exports = {
   },
   getOtherProfile: async (req, res) => {
     try {
-      const user = await userModel.findById(req.params.id).populate("posts");
+      const user = await userModel.findById(req.params.id).populate(
+        "posts followers following"
+      );
       if(!user){
         res.status(500).json({
           success: false,
@@ -139,7 +183,9 @@ module.exports = {
   },
   getAllProfile: async (req, res) => {
     try {
-      const users = await userModel.find({})
+      const users = await userModel.find({
+        name: { $regex: req.query.name, $options: "i" },
+      })
 
       if(!users){
         res.status(500).json({

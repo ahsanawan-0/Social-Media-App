@@ -1,9 +1,13 @@
 // const { use } = require("../app");
 const userModel = require("../models/Users");
+// const { sendEmail } = require("../middleweres/sendEmail");
+// const crypto = require("crypto");
+// const cloudinary = require("cloudinary");
 
 module.exports = {
   
   followUser: async (req, res) => {
+
     try {
       const userToFollow = await userModel.findById(req.params.id);
       const loggedInUser = await userModel.findById(req.user._id);
@@ -17,9 +21,9 @@ module.exports = {
 
       if (!loggedInUser.following.indexOf(userToFollow._id)) {
         const indexfollowing = loggedInUser.following.indexOf(userToFollow._id);
-        const indexfollowers = userToFollow.followes.indexOf(loggedInUser._id);
+        const indexfollowers = userToFollow.followers.indexOf(loggedInUser._id);
         loggedInUser.following.splice(indexfollowing, 1);
-        userToFollow.followes.splice(indexfollowers, 1);
+        userToFollow.followers.splice(indexfollowers, 1);
 
         await loggedInUser.save();
         await userToFollow.save();
@@ -32,7 +36,7 @@ module.exports = {
 
       } else { 
         loggedInUser.following.push(userToFollow._id);
-        userToFollow.followes.push(loggedInUser._id);
+        userToFollow.followers.push(loggedInUser._id);
         await loggedInUser.save();
         await userToFollow.save();
 
