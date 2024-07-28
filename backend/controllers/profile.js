@@ -1,4 +1,5 @@
 const userModel = require("../models/Users");
+const cloudinary = require("cloudinary");
 const postModel = require("../models/Post");
 module.exports = {
   updatePassword: async (req, res) => {
@@ -74,7 +75,7 @@ module.exports = {
       //get post array of user follower and id
       const post = user.posts;
       const following = user.following;
-      const followers = user.followes;
+      const followers = user.followers;
       const userId = user._id;
     // Removing Avatar from cloudinary
     await cloudinary.v2.uploader.destroy(user.avatar.public_id);
@@ -87,8 +88,8 @@ module.exports = {
       for (let i = 0; i < following.length; i++) {
         const getFollowing = await userModel.findById(following[i]);
 
-        const index = getFollowing.followes.indexOf(userId);
-        getFollowing.followes.splice(index, 1);
+        const index = getFollowing.followers.indexOf(userId);
+        getFollowing.followers.splice(index, 1);
 
         await getFollowing.save();
       }
@@ -144,7 +145,9 @@ module.exports = {
   },
   getOwnProfile: async (req, res) => {
     try {
-      const user = await userModel.findById(req.user._id).populate("posts");
+      const user = await userModel.findById(req.user._id).populate(
+        "posts followers following"
+      );
       res.status(200).json({
         success: true,
         user,
@@ -158,7 +161,9 @@ module.exports = {
   },
   getOtherProfile: async (req, res) => {
     try {
-      const user = await userModel.findById(req.params.id).populate("posts");
+      const user = await userModel.findById(req.params.id).populate(
+        "posts followers following"
+      );
       if(!user){
         res.status(500).json({
           success: false,
@@ -178,7 +183,9 @@ module.exports = {
   },
   getAllProfile: async (req, res) => {
     try {
-      const users = await userModel.find({})
+      const users = await userModel.find({
+        name: { $regex: req.query.name, $options: "i" },
+      })
 
       if(!users){
         res.status(500).json({

@@ -46,11 +46,10 @@ module.exports = {
     }
   },
   login: async (req, res) => {
-    console.log("check");
 
     try {
       const { email, password } = req.body;
-      const user = await userModel.findOne({ email }).select("+password");
+      const user = await userModel.findOne({ email }).select("+password").populate("posts followers following");;
       if (!user) {
         return res.status(400).json({
           success: false,

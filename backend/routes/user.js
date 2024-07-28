@@ -5,6 +5,6 @@ const { isAuthenticated } = require('../middleweres/auth');
 
 
 
-route.get("/follow/:id",isAuthenticated,followUser);
+route.get("/:id",isAuthenticated,followUser);
 
 module.exports = route;
